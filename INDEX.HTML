@@ -1,0 +1,736 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>UNO</title>
+<style>
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body {
+    font-family: 'Segoe UI', system-ui, sans-serif;
+    background: linear-gradient(135deg, #1a1a2e 0%, #16213e 50%, #0f3460 100%);
+    min-height: 100vh;
+    color: white;
+    overflow-x: hidden;
+  }
+  .container {
+    max-width: 1100px;
+    margin: 0 auto;
+    padding: 20px;
+  }
+  header {
+    text-align: center;
+    margin-bottom: 20px;
+  }
+  h1 {
+    font-size: 3rem;
+    font-weight: 900;
+    letter-spacing: 8px;
+    background: linear-gradient(90deg, #e74c3c, #f1c40f, #2ecc71, #3498db);
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    text-shadow: 0 0 30px rgba(255,255,255,0.2);
+  }
+  .status {
+    background: rgba(255,255,255,0.08);
+    border-radius: 12px;
+    padding: 12px 20px;
+    margin: 15px 0;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    flex-wrap: wrap;
+    gap: 10px;
+    font-size: 0.95rem;
+  }
+  .status-item { display: flex; align-items: center; gap: 8px; }
+  .dot {
+    width: 12px; height: 12px; border-radius: 50%;
+  }
+  .mesa {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    gap: 40px;
+    min-height: 220px;
+    margin: 25px 0;
+    position: relative;
+  }
+  .pilha, .descarte {
+    width: 110px; height: 160px;
+    border-radius: 12px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-weight: bold;
+    font-size: 1.1rem;
+    cursor: pointer;
+    transition: transform 0.2s, box-shadow 0.2s;
+    position: relative;
+  }
+  .pilha {
+    background: linear-gradient(145deg, #2c3e50, #1a252f);
+    border: 3px solid #ecf0f1;
+    box-shadow: 0 8px 20px rgba(0,0,0,0.4);
+  }
+  .pilha:hover { transform: translateY(-5px); }
+  .descarte {
+    border: 3px solid rgba(255,255,255,0.3);
+    box-shadow: 0 8px 25px rgba(0,0,0,0.5);
+  }
+  .carta {
+    width: 90px; height: 130px;
+    border-radius: 10px;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    font-weight: 800;
+    font-size: 1.6rem;
+    position: relative;
+    cursor: pointer;
+    transition: all 0.2s;
+    box-shadow: 0 4px 12px rgba(0,0,0,0.4);
+    user-select: none;
+    border: 3px solid rgba(255,255,255,0.25);
+  }
+  .carta:hover { transform: translateY(-12px) scale(1.05); z-index: 10; }
+  .carta.jogavel { box-shadow: 0 0 0 3px #2ecc71, 0 8px 20px rgba(46,204,113,0.4); }
+  .carta.vermelha { background: linear-gradient(145deg, #e74c3c, #c0392b); }
+  .carta.azul { background: linear-gradient(145deg, #3498db, #2980b9); }
+  .carta.verde { background: linear-gradient(145deg, #2ecc71, #27ae60); }
+  .carta.amarelo { background: linear-gradient(145deg, #f1c40f, #f39c12); color: #222; }
+  .carta.preto { background: linear-gradient(145deg, #2c3e50, #1a252f); }
+  .carta .valor {
+    font-size: 2rem;
+    line-height: 1;
+  }
+  .carta .tipo {
+    font-size: 0.7rem;
+    margin-top: 4px;
+    opacity: 0.9;
+    text-transform: uppercase;
+    letter-spacing: 1px;
+  }
+  .mao {
+    display: flex;
+    flex-wrap: wrap;
+    justify-content: center;
+    gap: 10px;
+    min-height: 150px;
+    padding: 15px;
+    background: rgba(0,0,0,0.25);
+    border-radius: 16px;
+    margin-top: 10px;
+  }
+  .oponentes {
+    display: flex;
+    justify-content: space-around;
+    margin-bottom: 20px;
+    flex-wrap: wrap;
+    gap: 15px;
+  }
+  .oponente {
+    background: rgba(255,255,255,0.07);
+    border-radius: 12px;
+    padding: 12px 18px;
+    text-align: center;
+    min-width: 140px;
+  }
+  .oponente.vez { border: 2px solid #2ecc71; box-shadow: 0 0 15px rgba(46,204,113,0.3); }
+  .oponente .nome { font-weight: 700; margin-bottom: 6px; }
+  .oponente .cartas-qtd {
+    font-size: 1.4rem;
+    font-weight: 800;
+  }
+  .botoes {
+    display: flex;
+    justify-content: center;
+    gap: 12px;
+    margin: 20px 0;
+    flex-wrap: wrap;
+  }
+  button {
+    background: linear-gradient(145deg, #e74c3c, #c0392b);
+    color: white;
+    border: none;
+    padding: 12px 28px;
+    border-radius: 50px;
+    font-weight: 700;
+    font-size: 1rem;
+    cursor: pointer;
+    transition: all 0.2s;
+    box-shadow: 0 4px 15px rgba(231,76,60,0.4);
+  }
+  button:hover { transform: translateY(-2px); box-shadow: 0 6px 20px rgba(231,76,60,0.5); }
+  button:disabled { opacity: 0.4; cursor: not-allowed; transform: none; }
+  button.secundario {
+    background: linear-gradient(145deg, #3498db, #2980b9);
+    box-shadow: 0 4px 15px rgba(52,152,219,0.4);
+  }
+  .mensagem {
+    text-align: center;
+    font-size: 1.15rem;
+    min-height: 30px;
+    margin: 10px 0;
+    font-weight: 600;
+  }
+  .cor-escolha {
+    display: none;
+    position: fixed;
+    inset: 0;
+    background: rgba(0,0,0,0.85);
+    z-index: 100;
+    align-items: center;
+    justify-content: center;
+    flex-direction: column;
+    gap: 20px;
+  }
+  .cor-escolha.ativo { display: flex; }
+  .cores {
+    display: flex;
+    gap: 15px;
+  }
+  .cor-btn {
+    width: 70px; height: 70px;
+    border-radius: 50%;
+    border: 4px solid white;
+    cursor: pointer;
+    transition: transform 0.2s;
+  }
+  .cor-btn:hover { transform: scale(1.15); }
+  .log {
+    max-height: 120px;
+    overflow-y: auto;
+    background: rgba(0,0,0,0.3);
+    border-radius: 10px;
+    padding: 10px 15px;
+    font-size: 0.85rem;
+    margin-top: 15px;
+  }
+  .log div { margin: 3px 0; opacity: 0.9; }
+  @media (max-width: 600px) {
+    .carta { width: 70px; height: 100px; font-size: 1.2rem; }
+    .carta .valor { font-size: 1.5rem; }
+    h1 { font-size: 2.2rem; letter-spacing: 4px; }
+  }
+</style>
+</head>
+<body>
+<div class="container">
+  <header>
+    <h1>UNO</h1>
+  </header>
+
+  <div class="oponentes" id="oponentes"></div>
+
+  <div class="status">
+    <div class="status-item">
+      <span>Direção:</span>
+      <span id="direcao">→</span>
+    </div>
+    <div class="status-item">
+      <span>Cor atual:</span>
+      <span class="dot" id="corAtual"></span>
+      <span id="corNome">-</span>
+    </div>
+    <div class="status-item">
+      <span id="turnoInfo">Sua vez</span>
+    </div>
+  </div>
+
+  <div class="mensagem" id="mensagem">Clique em "Novo Jogo" para começar</div>
+
+  <div class="mesa">
+    <div class="pilha" id="pilha" title="Comprar carta">
+      <div style="text-align:center">
+        <div style="font-size:2rem">UNO</div>
+        <div style="font-size:0.75rem;opacity:0.7">COMPRAR</div>
+      </div>
+    </div>
+    <div class="descarte" id="descarte"></div>
+  </div>
+
+  <div class="botoes">
+    <button id="btnNovo">Novo Jogo</button>
+    <button id="btnUno" class="secundario" disabled>UNO!</button>
+    <button id="btnPassar" disabled>Passar</button>
+  </div>
+
+  <div class="mao" id="maoJogador"></div>
+
+  <div class="log" id="log"></div>
+</div>
+
+<!-- Modal de escolha de cor -->
+<div class="cor-escolha" id="corEscolha">
+  <h2>Escolha a cor</h2>
+  <div class="cores">
+    <div class="cor-btn" style="background:#e74c3c" data-cor="vermelho"></div>
+    <div class="cor-btn" style="background:#3498db" data-cor="azul"></div>
+    <div class="cor-btn" style="background:#2ecc71" data-cor="verde"></div>
+    <div class="cor-btn" style="background:#f1c40f" data-cor="amarelo"></div>
+  </div>
+</div>
+
+<script>
+// ==================== CONFIGURAÇÃO ====================
+const CORES = ['vermelho', 'azul', 'verde', 'amarelo'];
+const CORES_HEX = {
+  vermelho: '#e74c3c',
+  azul: '#3498db',
+  verde: '#2ecc71',
+  amarelo: '#f1c40f'
+};
+const VALORES = ['0','1','2','3','4','5','6','7','8','9','pular','reverter','+2'];
+const ESPECIAIS = ['coringa', '+4'];
+
+// ==================== ESTADO DO JOGO ====================
+let baralho = [];
+let descarte = [];
+let maos = [[], [], [], []]; // 0 = jogador, 1-3 = bots
+let vez = 0;
+let direcao = 1; // 1 = horário, -1 = anti-horário
+let corAtual = null;
+let valorAtual = null;
+let comprarPendente = 0;
+let jogoAtivo = false;
+let aguardandoCor = false;
+let disseUno = [false, false, false, false];
+
+const nomes = ['Você', 'Bot 1', 'Bot 2', 'Bot 3'];
+
+// ==================== FUNÇÕES AUXILIARES ====================
+function criarBaralho() {
+  const b = [];
+  for (const cor of CORES) {
+    // 0 só uma vez
+    b.push({ cor, valor: '0', tipo: 'numero' });
+    // 1-9, pular, reverter, +2 (duas de cada)
+    for (let i = 0; i < 2; i++) {
+      for (const v of ['1','2','3','4','5','6','7','8','9','pular','reverter','+2']) {
+        b.push({ cor, valor: v, tipo: v === 'pular' || v === 'reverter' || v === '+2' ? 'especial' : 'numero' });
+      }
+    }
+  }
+  // Curingas
+  for (let i = 0; i < 4; i++) {
+    b.push({ cor: 'preto', valor: 'coringa', tipo: 'especial' });
+    b.push({ cor: 'preto', valor: '+4', tipo: 'especial' });
+  }
+  return embaralhar(b);
+}
+
+function embaralhar(arr) {
+  const a = [...arr];
+  for (let i = a.length - 1; i > 0; i--) {
+    const j = Math.floor(Math.random() * (i + 1));
+    [a[i], a[j]] = [a[j], a[i]];
+  }
+  return a;
+}
+
+function comprarCartas(qtd, jogador) {
+  for (let i = 0; i < qtd; i++) {
+    if (baralho.length === 0) {
+      // Reembaralha o descarte (exceto a carta do topo)
+      if (descarte.length <= 1) break;
+      const topo = descarte.pop();
+      baralho = embaralhar(descarte);
+      descarte = [topo];
+    }
+    if (baralho.length > 0) {
+      maos[jogador].push(baralho.pop());
+    }
+  }
+  disseUno[jogador] = false;
+}
+
+function podeJogar(carta) {
+  if (comprarPendente > 0) {
+    // Só pode jogar +2 ou +4 se houver compra pendente
+    return carta.valor === '+2' || carta.valor === '+4';
+  }
+  if (carta.cor === 'preto') return true;
+  return carta.cor === corAtual || carta.valor === valorAtual;
+}
+
+function aplicarEfeito(carta, jogador) {
+  const prox = () => (vez + direcao + 4) % 4;
+
+  if (carta.valor === 'pular') {
+    vez = prox();
+    log(`${nomes[jogador]} pulou ${nomes[prox()]}!`);
+  } else if (carta.valor === 'reverter') {
+    direcao *= -1;
+    log(`${nomes[jogador]} reverteu a direção!`);
+    document.getElementById('direcao').textContent = direcao === 1 ? '→' : '←';
+  } else if (carta.valor === '+2') {
+    comprarPendente += 2;
+    log(`${nomes[jogador]} jogou +2! (${comprarPendente} cartas pendentes)`);
+  } else if (carta.valor === '+4') {
+    comprarPendente += 4;
+    log(`${nomes[jogador]} jogou +4! (${comprarPendente} cartas pendentes)`);
+  }
+}
+
+function log(msg) {
+  const el = document.getElementById('log');
+  const div = document.createElement('div');
+  div.textContent = msg;
+  el.prepend(div);
+  if (el.children.length > 30) el.lastChild.remove();
+}
+
+// ==================== RENDER ====================
+function renderCarta(carta, clicavel = false, idx = -1) {
+  const div = document.createElement('div');
+  div.className = `carta ${carta.cor}`;
+  if (clicavel && podeJogar(carta)) div.classList.add('jogavel');
+
+  let texto = carta.valor;
+  if (carta.valor === 'pular') texto = '⊘';
+  if (carta.valor === 'reverter') texto = '↺';
+  if (carta.valor === 'coringa') texto = '★';
+  if (carta.valor === '+4') texto = '+4';
+
+  div.innerHTML = `<div class="valor">${texto}</div>`;
+  if (carta.valor === 'pular' || carta.valor === 'reverter') {
+    div.innerHTML += `<div class="tipo">${carta.valor}</div>`;
+  }
+
+  if (clicavel) {
+    div.onclick = () => jogarCarta(idx);
+  }
+  return div;
+}
+
+function atualizarTela() {
+  // Oponentes
+  const opEl = document.getElementById('oponentes');
+  opEl.innerHTML = '';
+  for (let i = 1; i < 4; i++) {
+    const div = document.createElement('div');
+    div.className = 'oponente' + (vez === i ? ' vez' : '');
+    div.innerHTML = `
+      <div class="nome">${nomes[i]}</div>
+      <div class="cartas-qtd">${maos[i].length} carta${maos[i].length !== 1 ? 's' : ''}</div>
+    `;
+    opEl.appendChild(div);
+  }
+
+  // Descarte
+  const desEl = document.getElementById('descarte');
+  desEl.innerHTML = '';
+  if (descarte.length > 0) {
+    const topo = descarte[descarte.length - 1];
+    const carta = renderCarta(topo);
+    // Se for coringa, mostra a cor escolhida
+    if (topo.cor === 'preto' && corAtual) {
+      carta.style.borderColor = CORES_HEX[corAtual];
+      carta.style.boxShadow = `0 0 0 4px ${CORES_HEX[corAtual]}`;
+    }
+    desEl.appendChild(carta);
+  }
+
+  // Cor atual
+  const corDot = document.getElementById('corAtual');
+  const corNome = document.getElementById('corNome');
+  if (corAtual) {
+    corDot.style.background = CORES_HEX[corAtual];
+    corNome.textContent = corAtual.toUpperCase();
+  }
+
+  // Mão do jogador
+  const maoEl = document.getElementById('maoJogador');
+  maoEl.innerHTML = '';
+  maos[0].forEach((c, i) => {
+    maoEl.appendChild(renderCarta(c, vez === 0 && jogoAtivo && !aguardandoCor, i));
+  });
+
+  // Botões
+  document.getElementById('btnUno').disabled = !(vez === 0 && maos[0].length === 1 && !disseUno[0]);
+  document.getElementById('btnPassar').disabled = !(vez === 0 && jogoAtivo && !aguardandoCor);
+
+  // Turno
+  document.getElementById('turnoInfo').textContent = vez === 0 ? 'Sua vez!' : `Vez de ${nomes[vez]}`;
+  document.getElementById('turnoInfo').style.color = vez === 0 ? '#2ecc71' : '#f1c40f';
+}
+
+// ==================== LÓGICA DO JOGO ====================
+function iniciarJogo() {
+  baralho = criarBaralho();
+  descarte = [];
+  maos = [[], [], [], []];
+  vez = 0;
+  direcao = 1;
+  comprarPendente = 0;
+  disseUno = [false, false, false, false];
+  jogoAtivo = true;
+  aguardandoCor = false;
+
+  // Distribui 7 cartas
+  for (let j = 0; j < 4; j++) {
+    comprarCartas(7, j);
+  }
+
+  // Carta inicial (não pode ser especial)
+  let inicial;
+  do {
+    inicial = baralho.pop();
+  } while (inicial.cor === 'preto' || inicial.valor === 'pular' || inicial.valor === 'reverter' || inicial.valor === '+2');
+
+  descarte.push(inicial);
+  corAtual = inicial.cor;
+  valorAtual = inicial.valor;
+
+  document.getElementById('log').innerHTML = '';
+  log('Jogo iniciado!');
+  document.getElementById('mensagem').textContent = 'Sua vez! Jogue uma carta ou compre.';
+  document.getElementById('direcao').textContent = '→';
+  atualizarTela();
+}
+
+function jogarCarta(idx) {
+  if (vez !== 0 || !jogoAtivo || aguardandoCor) return;
+  const carta = maos[0][idx];
+  if (!podeJogar(carta)) {
+    document.getElementById('mensagem').textContent = 'Essa carta não pode ser jogada!';
+    return;
+  }
+
+  // Remove da mão
+  maos[0].splice(idx, 1);
+  descarte.push(carta);
+  valorAtual = carta.valor;
+
+  // Efeito
+  if (carta.cor === 'preto') {
+    // Precisa escolher cor
+    aguardandoCor = true;
+    document.getElementById('corEscolha').classList.add('ativo');
+    // Guarda a carta para aplicar depois
+    window._cartaPendente = carta;
+    atualizarTela();
+    return;
+  }
+
+  corAtual = carta.cor;
+  aplicarEfeito(carta, 0);
+  log(`Você jogou ${carta.valor} ${carta.cor}`);
+
+  verificarVitoria(0);
+  if (!jogoAtivo) return;
+
+  passarVez();
+}
+
+function escolherCor(cor) {
+  if (!aguardandoCor) return;
+  corAtual = cor;
+  aguardandoCor = false;
+  document.getElementById('corEscolha').classList.remove('ativo');
+
+  const carta = window._cartaPendente;
+  aplicarEfeito(carta, 0);
+  log(`Você jogou ${carta.valor} e escolheu ${cor}`);
+
+  verificarVitoria(0);
+  if (!jogoAtivo) return;
+  passarVez();
+}
+
+function comprarDoBaralho() {
+  if (vez !== 0 || !jogoAtivo || aguardandoCor) return;
+
+  if (comprarPendente > 0) {
+    comprarCartas(comprarPendente, 0);
+    log(`Você comprou ${comprarPendente} cartas`);
+    comprarPendente = 0;
+    document.getElementById('mensagem').textContent = 'Você comprou as cartas. Passando a vez...';
+    passarVez();
+    return;
+  }
+
+  comprarCartas(1, 0);
+  const nova = maos[0][maos[0].length - 1];
+  log(`Você comprou uma carta`);
+
+  if (podeJogar(nova)) {
+    document.getElementById('mensagem').textContent = 'Você comprou e pode jogar essa carta!';
+    atualizarTela();
+  } else {
+    document.getElementById('mensagem').textContent = 'Carta comprada não serve. Passando a vez...';
+    setTimeout(passarVez, 800);
+  }
+  atualizarTela();
+}
+
+function passarVez() {
+  if (!jogoAtivo) return;
+
+  // Avança o turno
+  vez = (vez + direcao + 4) % 4;
+
+  // Se tem compra pendente e o jogador não jogou +2/+4, ele é obrigado a comprar
+  if (comprarPendente > 0 && vez !== 0) {
+    // Bots lidam no turno deles
+  }
+
+  atualizarTela();
+
+  if (vez === 0) {
+    document.getElementById('mensagem').textContent = comprarPendente > 0
+      ? `Você precisa comprar ${comprarPendente} cartas ou jogar +2/+4`
+      : 'Sua vez!';
+  } else {
+    document.getElementById('mensagem').textContent = `Vez de ${nomes[vez]}...`;
+    setTimeout(() => turnoBot(vez), 900 + Math.random() * 600);
+  }
+}
+
+function turnoBot(bot) {
+  if (!jogoAtivo || vez !== bot) return;
+
+  // Se tem compra pendente
+  if (comprarPendente > 0) {
+    // Tenta jogar +2 ou +4
+    const idx = maos[bot].findIndex(c => c.valor === '+2' || c.valor === '+4');
+    if (idx >= 0) {
+      const carta = maos[bot].splice(idx, 1)[0];
+      descarte.push(carta);
+      valorAtual = carta.valor;
+      if (carta.cor === 'preto') {
+        // Escolhe a cor mais comum na mão
+        corAtual = escolherMelhorCor(bot);
+      } else {
+        corAtual = carta.cor;
+      }
+      aplicarEfeito(carta, bot);
+      log(`${nomes[bot]} jogou ${carta.valor}`);
+      verificarVitoria(bot);
+      if (!jogoAtivo) return;
+      passarVez();
+      return;
+    } else {
+      // Compra as cartas
+      comprarCartas(comprarPendente, bot);
+      log(`${nomes[bot]} comprou ${comprarPendente} cartas`);
+      comprarPendente = 0;
+      passarVez();
+      return;
+    }
+  }
+
+  // Procura carta jogável
+  const jogaveis = maos[bot]
+    .map((c, i) => ({ c, i }))
+    .filter(({ c }) => podeJogar(c));
+
+  if (jogaveis.length === 0) {
+    comprarCartas(1, bot);
+    const nova = maos[bot][maos[bot].length - 1];
+    log(`${nomes[bot]} comprou uma carta`);
+    if (podeJogar(nova)) {
+      // Joga a carta comprada
+      maos[bot].pop();
+      descarte.push(nova);
+      valorAtual = nova.valor;
+      if (nova.cor === 'preto') corAtual = escolherMelhorCor(bot);
+      else corAtual = nova.cor;
+      aplicarEfeito(nova, bot);
+      log(`${nomes[bot]} jogou a carta comprada (${nova.valor})`);
+      verificarVitoria(bot);
+      if (!jogoAtivo) return;
+    }
+    passarVez();
+    return;
+  }
+
+  // Estratégia simples: prioriza especiais, depois números, depois curingas
+  jogaveis.sort((a, b) => {
+    const score = (c) => {
+      if (c.valor === '+4') return 100;
+      if (c.valor === '+2') return 80;
+      if (c.valor === 'pular' || c.valor === 'reverter') return 60;
+      if (c.valor === 'coringa') return 40;
+      return 10;
+    };
+    return score(b.c) - score(a.c);
+  });
+
+  const { c: carta, i: idx } = jogaveis[0];
+  maos[bot].splice(idx, 1);
+  descarte.push(carta);
+  valorAtual = carta.valor;
+
+  if (carta.cor === 'preto') {
+    corAtual = escolherMelhorCor(bot);
+    log(`${nomes[bot]} jogou ${carta.valor} e escolheu ${corAtual}`);
+  } else {
+    corAtual = carta.cor;
+    log(`${nomes[bot]} jogou ${carta.valor} ${carta.cor}`);
+  }
+
+  aplicarEfeito(carta, bot);
+  verificarVitoria(bot);
+  if (!jogoAtivo) return;
+  passarVez();
+}
+
+function escolherMelhorCor(jogador) {
+  const contagem = { vermelho: 0, azul: 0, verde: 0, amarelo: 0 };
+  maos[jogador].forEach(c => {
+    if (c.cor !== 'preto') contagem[c.cor]++;
+  });
+  return Object.entries(contagem).sort((a, b) => b[1] - a[1])[0][0];
+}
+
+function verificarVitoria(jogador) {
+  if (maos[jogador].length === 0) {
+    jogoAtivo = false;
+    const msg = jogador === 0 ? '🎉 Você venceu!' : `😢 ${nomes[jogador]} venceu!`;
+    document.getElementById('mensagem').textContent = msg;
+    log(msg);
+    atualizarTela();
+  } else if (maos[jogador].length === 1 && !disseUno[jogador]) {
+    // Penalidade de UNO (só aplica no jogador humano se esquecer)
+    if (jogador === 0) {
+      // Aviso visual, mas não força ainda
+    }
+  }
+}
+
+function gritarUno() {
+  if (vez === 0 && maos[0].length === 1) {
+    disseUno[0] = true;
+    document.getElementById('mensagem').textContent = 'UNO!!!';
+    log('Você gritou UNO!');
+    document.getElementById('btnUno').disabled = true;
+  }
+}
+
+// ==================== EVENTOS ====================
+document.getElementById('btnNovo').onclick = iniciarJogo;
+document.getElementById('pilha').onclick = comprarDoBaralho;
+document.getElementById('btnPassar').onclick = () => {
+  if (vez === 0 && jogoAtivo) {
+    if (comprarPendente > 0) {
+      comprarCartas(comprarPendente, 0);
+      log(`Você comprou ${comprarPendente} cartas`);
+      comprarPendente = 0;
+    }
+    passarVez();
+  }
+};
+document.getElementById('btnUno').onclick = gritarUno;
+
+document.querySelectorAll('.cor-btn').forEach(btn => {
+  btn.onclick = () => escolherCor(btn.dataset.cor);
+});
+
+// Inicia automaticamente
+iniciarJogo();
+</script>
+</body>
+</html>
